@@ -7,32 +7,28 @@ pub fn fen2svg(fen: String) -> String {
         let mut x: usize = 0;
         for c in row.chars() {
             match c {
-                'N'|'n'|'K'|'k'|'P'|'p'|'B'|'b'|'R'|'r'|'Q'|'q' =>
-                 svg.push_str(&format!(
-                    r#"<g transform="translate({} {})">{}</g>"#,
-                    x, y, match c {
-                        'N' => W_N,
-                        'n' => B_N,
-                        'R' => W_R,
-                        'r' => B_R,
-                        'K' => W_K,
-                        'k' => B_K,
-                        'Q' => W_Q,
-                        'q' => B_Q,
-                        'P' => W_P,
-                        'p' => B_P,
-                        'B' => W_B,
-                        'b' => B_B,
-                        _ => "",
-                    }
-                )),
-                '2' => x += GRID_SIZE,
-                '3' => x += 2 * GRID_SIZE,
-                '4' => x += 3 * GRID_SIZE,
-                '5' => x += 4 * GRID_SIZE,
-                '6' => x += 5 * GRID_SIZE,
-                '7' => x += 6 * GRID_SIZE,
-                '8' => x += 7 * GRID_SIZE,
+                'N' | 'n' | 'K' | 'k' | 'P' | 'p' | 'B' | 'b' | 'R' | 'r' | 'Q' | 'q' => svg
+                    .push_str(&format!(
+                        r#"<g transform="translate({} {})">{}</g>"#,
+                        x,
+                        y,
+                        match c {
+                            'N' => W_N,
+                            'n' => B_N,
+                            'R' => W_R,
+                            'r' => B_R,
+                            'K' => W_K,
+                            'k' => B_K,
+                            'Q' => W_Q,
+                            'q' => B_Q,
+                            'P' => W_P,
+                            'p' => B_P,
+                            'B' => W_B,
+                            'b' => B_B,
+                            _ => "",
+                        }
+                    )),
+                '2'...'8' => x += GRID_SIZE * (c.to_digit(10).unwrap() as usize - 1),
                 _ => (),
             }
             x += GRID_SIZE;
