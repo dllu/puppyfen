@@ -1,0 +1,10 @@
+[package]
+name = "puppyfen"
+version = "0.1.0"
+authors = ["daniel lu <daniel@lawrence.lu>"]
+
+[dependencies]
+lazy_static = "1.0.0"
+regex = "1.1.0"
+resvg = {version = "0.4.0", features = ["cairo-backend"]}
+sha1 = "0.6.0"
