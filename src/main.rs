@@ -35,9 +35,10 @@ fn handle_connection(mut stream: TcpStream) {
     let mut buffer = [0; 512];
     stream.read(&mut buffer).unwrap();
     let req = String::from_utf8_lossy(&buffer[..]);
-    println!("Request: {}", req);
+
+    //println!("Request: {}", req);
     let status_200 = "HTTP/1.1 200 OK\r\n\r\n";
-    let status_404 = "HTTP/1.1 404 NOT FOUND\r\n\r\n";
+    let status_404 = "HTTP/1.1 404 NOT FOUND\r\n\r\ninvalid fen";
 
     if FEN_SVG_RE.is_match(&req) {
         let fen = req[5..].split(".svg HTTP/1.1").next().unwrap().to_string();
@@ -46,8 +47,7 @@ fn handle_connection(mut stream: TcpStream) {
         stream.write(fen2svg::fen2svg(fen).as_bytes()).unwrap();
     } else if FEN_PNG_RE.is_match(&req) {
         let fen = req[5..].split(".png HTTP/1.1").next().unwrap().to_string();
-        let mut filename: String = sha1::Sha1::from(&fen).digest().to_string();
-        filename.push_str(".png");
+        let filename: String = format!("{}.png", sha1::Sha1::from(&fen).digest());
         let path = Path::new(&filename);
         if !path.exists() {
             let svg = fen2svg::fen2svg(fen);
@@ -60,12 +60,15 @@ fn handle_connection(mut stream: TcpStream) {
         }
         let mut png_file = File::open(path).unwrap();
         let mut png_buffer = Vec::new();
-        png_file.read_to_end(&mut png_buffer);
-        stream.write(status_200.as_bytes()).unwrap();
-        stream.write(png_buffer.as_slice()).unwrap();
+        if let Err(result) = png_file.read_to_end(&mut png_buffer) {
+            println!("couldn't write png: {}", result);
+            stream.write(status_404.as_bytes()).unwrap();
+        } else {
+            stream.write(status_200.as_bytes()).unwrap();
+            stream.write(png_buffer.as_slice()).unwrap();
+        }
     } else {
         stream.write(status_404.as_bytes()).unwrap();
-        stream.write("oh no".as_bytes()).unwrap();
     }
 
     stream.flush().unwrap();
