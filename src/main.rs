@@ -26,10 +26,10 @@ fn main() {
 fn handle_connection(mut stream: TcpStream) {
     lazy_static! {
         static ref FEN_SVG_RE: regex::Regex =
-            regex::Regex::new(r"^GET (/(r|n|b|q|k|p|R|N|B|Q|K|P|[1-8])+){8}\.svg HTTP/1.1")
+            regex::Regex::new(r"^GET (/(r|n|b|q|k|p|R|N|B|Q|K|P|[1-8])+){8}\.svg HTTP/\d")
                 .unwrap();
         static ref FEN_PNG_RE: regex::Regex =
-            regex::Regex::new(r"^GET (/(r|n|b|q|k|p|R|N|B|Q|K|P|[1-8])+){8}\.png HTTP/1.1")
+            regex::Regex::new(r"^GET (/(r|n|b|q|k|p|R|N|B|Q|K|P|[1-8])+){8}\.png HTTP/\d")
                 .unwrap();
     }
     let mut buffer = [0; 512];
@@ -37,16 +37,22 @@ fn handle_connection(mut stream: TcpStream) {
     let req = String::from_utf8_lossy(&buffer[..]);
 
     //println!("Request: {}", req);
-    let status_200 = "HTTP/1.1 200 OK\r\n\r\n";
+    let status_200 = "HTTP/1.1 200 OK\r\n";
     let status_404 = "HTTP/1.1 404 NOT FOUND\r\n\r\ninvalid fen";
 
     if FEN_SVG_RE.is_match(&req) {
-        let fen = req[5..].split(".svg HTTP/1.1").next().unwrap().to_string();
+        let fen = req[5..].split(".svg HTTP/").next().unwrap().to_string();
+        let svg = fen2svg::fen2svg(fen);
 
         stream.write(status_200.as_bytes()).unwrap();
-        stream.write(fen2svg::fen2svg(fen).as_bytes()).unwrap();
+        let content_length = format!("Content-Length: {}\r\n", svg.len());
+        stream.write(content_length.as_bytes()).unwrap();
+        let content_type = "Content-Type: image/svg+xml\r\n";
+        stream.write(content_type.as_bytes()).unwrap();
+        stream.write("\r\n".as_bytes()).unwrap();
+        stream.write(svg.as_bytes()).unwrap();
     } else if FEN_PNG_RE.is_match(&req) {
-        let fen = req[5..].split(".png HTTP/1.1").next().unwrap().to_string();
+        let fen = req[5..].split(".png HTTP/").next().unwrap().to_string();
         let filename: String = format!("{}.png", sha1::Sha1::from(&fen).digest());
         let path = Path::new(&filename);
         if !path.exists() {
@@ -65,6 +71,11 @@ fn handle_connection(mut stream: TcpStream) {
             stream.write(status_404.as_bytes()).unwrap();
         } else {
             stream.write(status_200.as_bytes()).unwrap();
+            let content_length = format!("Content-Length: {}\r\n", png_buffer.len());
+            stream.write(content_length.as_bytes()).unwrap();
+            let content_type = "Content-Type: image/png\r\n";
+            stream.write(content_type.as_bytes()).unwrap();
+            stream.write("\r\n".as_bytes()).unwrap();
             stream.write(png_buffer.as_slice()).unwrap();
         }
     } else {
