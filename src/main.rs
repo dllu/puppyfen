@@ -50,7 +50,7 @@ fn handle_connection(mut stream: TcpStream) {
         handle_svg(&stream, fen, true);
     } else if FEN_PNG_RE.is_match(&req) {
         let fen = req[5..].split(".png HTTP/").next().unwrap().to_string();
-        handle_png(&stream, fen, true);
+        handle_png(&stream, fen, false);
     } else if FEN_BLACK_PNG_RE.is_match(&req) {
         let fen = req[11..].split(".png HTTP/").next().unwrap().to_string();
         handle_png(&stream, fen, true);
